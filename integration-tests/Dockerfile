@@ -13,7 +13,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         sudo \
     openjdk-8-jdk wget curl git python3-dev \
     language-pack-ko
- && rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/*
 
 RUN locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8
