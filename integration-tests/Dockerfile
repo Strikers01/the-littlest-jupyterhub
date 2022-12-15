@@ -18,27 +18,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 RUN locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8
 
-# Install zsh
-RUN apt-get install -y zsh && \
-    sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
-    
-# Install Khaiii
-WORKDIR /deps
-RUN git clone https://github.com/kakao/khaiii.git
-WORKDIR /deps/khaiii
-
-RUN pip install cython && \
-    pip install --upgrade pip && \
-    pip install -r requirements.txt && \
-    mkdir build
-WORKDIR /deps/khaiii/build
-
-RUN cmake .. && make all && make resource && make install && make package_python
-
-WORKDIR /deps/khaiii/build/package_python
-RUN pip install .
-
-# Kill all the things we don't need
 RUN find /etc/systemd/system \
     /lib/systemd/system \
     -path '*.wants/*' \
