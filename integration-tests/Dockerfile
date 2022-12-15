@@ -1,67 +1,39 @@
-FROM nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04
+# Base image built from `tf.Dockerfile`
 
-# Remove any third-party apt sources to avoid issues with expiring keys.
-RUN rm -f /etc/apt/sources.list.d/*.list
+FROM tlkh/ai-lab:20.12-base
 
-# Install some basic utilities & python prerequisites
-ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update -y && apt-get install -y --no-install-recommends\
-    vim \
-    curl \
-    apt-utils \
-    ssh \
-    tree \
-    ca-certificates \
-    sudo \
-    git \
-    bzip2 \
-    libx11-6 \
-    make \
-    build-essential \
-    libssl-dev \
-    zlib1g-dev \
-    libbz2-dev \
-    libreadline-dev \
-    libsqlite3-dev \
-    wget \
-    llvm \
-    libncursesw5-dev \
-    xz-utils \
-    tk-dev \
-    libxml2-dev \
-    libxmlsec1-dev \
-    libffi-dev \
-    liblzma-dev \
-    python3-openssl && \
-    rm -rf /var/lib/apt/lists/*
+LABEL maintainer="Timothy Liu <timothy_liu@mymail.sutd.edu.sg>"
 
-# Remove any third-party apt sources to avoid issues with expiring keys.
-RUN rm -f /etc/apt/sources.list.d/*.list
+USER root
 
-# Set up python environment with pyenv
-ARG PYTHON_VERSION 3.10.6
-RUN curl https://pyenv.run | bash
-ENV PYENV_ROOT="$HOME/.pyenv"
-ENV PATH "$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
-ENV eval "$(pyenv init -)"
-RUN cd $HOME && /bin/bash -c "source .bashrc" && \
-    /bin/bash -c "pyenv install -v $PYTHON_VERSION" && \
-    /bin/bash -c "pyenv global $PYTHON_VERSION"
-    
-# Install Poetry
-ENV PATH "$HOME/.local/bin:$PATH"
-ENV PYTHON_KEYRING_BACKEND keyring.backends.null.Keyring
-RUN curl -sSL https://install.python-poetry.org | python - && \
-    poetry config virtualenvs.in-project true && \ 
-    poetry config virtualenvs.path "./.venv"
-    
-# [option] Set up DL development environment (with poetry)
-RUN mkdir $HOME/workspace/machine-learning
-WORKDIR $HOME/workspace/machine-learning
-COPY pyproject.toml $HOME/workspace/machine-learning/pyproject.toml
-RUN /bin/bash -c "pyenv local $PYTHON_VERSION" && \
-    poetry env use python3 && \
-    poetry run poetry install --no-cache
+ENV DEBIAN_FRONTEND=noninteractive \
+    TF_FORCE_GPU_ALLOW_GROWTH=true
+
+# install conda TensorFlow and PyTorch
+
+USER $NB_UID
+
+RUN conda install -c anaconda -c pytorch --quiet --yes \
+      'python=3.7' \
+      pytorch torchvision torchaudio \
+      tensorflow-gpu \
+      tensorflow-hub \
+      tensorflow-datasets \
+      'cudatoolkit=10.2' && \
+    pip install --no-cache-dir torchtext pytorch-lightning['extra'] && \
+    pip uninstall pillow -y && \
+      CC="cc -mavx2" pip install -U --force-reinstall --no-cache-dir pillow-simd && \
+    conda clean -tipsy && \
+    conda build purge-all && \
+    find $CONDA_DIR -type f,l -name '*.a' -delete && \
+    find $CONDA_DIR -type f,l -name '*.pyc' -delete && \
+    find $CONDA_DIR -type f,l -name '*.js.map' -delete && \
+    rm -rf $CONDA_DIR/pkgs && \
+    rm -rf /tmp/* && \
+    rm -rf $HOME/.cache && \
+    rm -rf $HOME/.node-gyp && \
+    fix-permissions $CONDA_DIR && \
+    fix-permissions $HOME
     
 # Kill all the things we don't need
 RUN find /etc/systemd/system \
