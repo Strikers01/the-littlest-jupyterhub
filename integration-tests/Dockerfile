@@ -1,17 +1,24 @@
 # Systemd inside a Docker container, for CI only
-ARG ubuntu_version=20.04
-FROM ufoym/deepo:all
+# FROM ubuntu:18.04
+FROM nvidia/cuda:11.0.3-devel-ubuntu18.04
 
-# DEBIAN_FRONTEND is set to avoid being asked for input and hang during build:
-# https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
-RUN export DEBIAN_FRONTEND=noninteractive \
- && apt-get update \
- && apt-get install --yes \
-        systemd \
-        curl \
-        git python3-dev wget \
-        sudo \
- && rm -rf /var/lib/apt/lists/*
+RUN apt-get update --yes
+
+RUN apt-get install --yes systemd curl git sudo wget nano htop zip
+
+RUN wget https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/libnvinfer7_7.1.3-1+cuda11.0_amd64.deb
+
+RUN apt-get install ./libnvinfer7_7.1.3-1+cuda11.0_amd64.deb --yes
+
+# tensorflow-model-server
+RUN echo "deb [arch=amd64] http://storage.googleapis.com/tensorflow-serving-apt stable tensorflow-model-server tensorflow-model-server-universal" | tee /etc/apt/sources.list.d/tensorflow-serving.list && \
+curl https://storage.googleapis.com/tensorflow-serving-apt/tensorflow-serving.release.pub.gpg | apt-key add -
+
+RUN apt-get update --yes
+
+RUN apt-get install tensorflow-model-server
+
+RUN apt-get autoremove -y
 
 # Kill all the things we don't need
 RUN find /etc/systemd/system \
@@ -29,8 +36,11 @@ RUN systemctl set-default multi-user.target
 STOPSIGNAL SIGRTMIN+3
 
 # Uncomment these lines for a development install
-#ENV TLJH_BOOTSTRAP_DEV=yes
-#ENV TLJH_BOOTSTRAP_PIP_SPEC=/srv/src
-#ENV PATH=/opt/tljh/hub/bin:${PATH}
+# ENV TLJH_BOOTSTRAP_DEV=yes
+# ENV TLJH_BOOTSTRAP_PIP_SPEC=/srv/src
+# ENV PATH=/opt/tljh/hub/bin:${PATH}
 
-CMD ["/bin/bash", "-c", "exec /lib/systemd/systemd --log-target=journal 3>&1"]
+#  --mount type=bind,source=$(pwd),target=/srv/src
+COPY / /srv/src
+
+CMD ["/bin/bash", "-c", "exec /sbin/init --log-target=journal 3>&1"]
