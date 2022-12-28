@@ -1,8 +1,17 @@
-FROM tensorflow/tensorflow:2.5.1-gpu
+# Systemd inside a Docker container, for CI only
+ARG tensorflow_version=2.5.1-gpu
+FROM tensorflow/${tensorflow_version}
 
-RUN apt-get update --yes
-
-RUN apt-get install --yes systemd curl git sudo wget nano htop zip
+# DEBIAN_FRONTEND is set to avoid being asked for input and hang during build:
+# https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
+RUN export DEBIAN_FRONTEND=noninteractive \
+ && apt-get update \
+ && apt-get install --yes \
+        systemd \
+        curl \
+        git \
+        sudo \
+ && rm -rf /var/lib/apt/lists/*
 
 # Kill all the things we don't need
 RUN find /etc/systemd/system \
@@ -20,11 +29,8 @@ RUN systemctl set-default multi-user.target
 STOPSIGNAL SIGRTMIN+3
 
 # Uncomment these lines for a development install
-# ENV TLJH_BOOTSTRAP_DEV=yes
-# ENV TLJH_BOOTSTRAP_PIP_SPEC=/srv/src
-# ENV PATH=/opt/tljh/hub/bin:${PATH}
+#ENV TLJH_BOOTSTRAP_DEV=yes
+#ENV TLJH_BOOTSTRAP_PIP_SPEC=/srv/src
+#ENV PATH=/opt/tljh/hub/bin:${PATH}
 
-#  --mount type=bind,source=$(pwd),target=/srv/src
-COPY / /srv/src
-
-CMD ["/bin/bash", "-c", "exec /sbin/init --log-target=journal 3>&1"]
+CMD ["/bin/bash", "-c", "exec /lib/systemd/systemd --log-target=journal 3>&1"]
