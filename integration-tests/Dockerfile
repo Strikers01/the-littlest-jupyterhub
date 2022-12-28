@@ -1,6 +1,6 @@
 # Systemd inside a Docker container, for CI only
 ARG ubuntu_version=20.04
-FROM ufoym/deepo
+FROM ufoym/deepo:all
 
 # DEBIAN_FRONTEND is set to avoid being asked for input and hang during build:
 # https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
@@ -9,7 +9,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
  && apt-get install --yes \
         systemd \
         curl \
-        git \
+        git python3-dev wget \
         sudo \
  && rm -rf /var/lib/apt/lists/*
 
