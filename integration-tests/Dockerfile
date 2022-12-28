@@ -1,6 +1,6 @@
 # Systemd inside a Docker container, for CI only
 ARG tensorflow_version=2.5.1-gpu
-FROM tensorflow/${tensorflow_version}
+FROM tensorflow/tensorflow:${tensorflow_version}
 
 # DEBIAN_FRONTEND is set to avoid being asked for input and hang during build:
 # https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
