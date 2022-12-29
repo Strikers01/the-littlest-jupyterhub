@@ -3,25 +3,33 @@
 FROM tensorflow/tensorflow:latest-gpu-jupyter
 ENV LC_ALL=C.UTF-8
 
-# DEBIAN_FRONTEND is set to avoid being asked for input and hang during build:
-# https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
-# Basic Utils
-RUN . /etc/os-release; \
-	printf "deb http://ppa.launchpad.net/jonathonf/vim/ubuntu %s main" "$UBUNTU_CODENAME" main | tee /etc/apt/sources.list.d/vim-ppa.list && \
-	apt-key  adv --keyserver hkps://keyserver.ubuntu.com --recv-key 4AB0F789CBA31744CC7DA76A8CF63AD3F06FC659 && \
-	apt-get update --fix-missing && \
-	env DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade --autoremove --purge --no-install-recommends -y \
-	build-essential \
-	bzip2 \
-	ca-certificates \
-	curl \
-	git \
-	libcanberra-gtk-module \
-	libgtk2.0-0 \
-	libx11-6 \
-	sudo \
-	graphviz \
-	vim
+# Let us install tzdata painlessly
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Needed for string substitution
+SHELL ["/bin/bash", "-c"]
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    ccache \
+    cmake \
+    curl \
+    git \
+    libfreetype6-dev \
+    libhdf5-serial-dev \
+    libzmq3-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    pkg-config \
+    software-properties-common \
+    ssh \
+    sudo \
+    unzip \
+    vim \
+    wget
+RUN rm -rf /var/lib/apt/lists/*
  
 # Install Miniconda
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
