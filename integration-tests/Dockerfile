@@ -5,15 +5,23 @@ ENV LC_ALL=C.UTF-8
 
 # DEBIAN_FRONTEND is set to avoid being asked for input and hang during build:
 # https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
-RUN export DEBIAN_FRONTEND=noninteractive \
- && apt-get update \
- && apt-get install --yes \
-        build-essential \
-        systemd \
-        curl \
-        git \
-        sudo \
- && rm -rf /var/lib/apt/lists/*
+# Basic Utils
+RUN . /etc/os-release; \
+	printf "deb http://ppa.launchpad.net/jonathonf/vim/ubuntu %s main" "$UBUNTU_CODENAME" main | tee /etc/apt/sources.list.d/vim-ppa.list && \
+	apt-key  adv --keyserver hkps://keyserver.ubuntu.com --recv-key 4AB0F789CBA31744CC7DA76A8CF63AD3F06FC659 && \
+	apt-get update --fix-missing && \
+	env DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade --autoremove --purge --no-install-recommends -y \
+	build-essential \
+	bzip2 \
+	ca-certificates \
+	curl \
+	git \
+	libcanberra-gtk-module \
+	libgtk2.0-0 \
+	libx11-6 \
+	sudo \
+	graphviz \
+	vim
  
 # Install Miniconda
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
