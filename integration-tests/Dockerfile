@@ -1,16 +1,50 @@
 # Systemd inside a Docker container, for CI only
-FROM tensorflow/tensorflow:2.8.0-gpu-jupyter
+# Base Image
+FROM nvidia/cuda:11.2.0-base-ubuntu20.04
+ENV LC_ALL=C.UTF-8
 
 # DEBIAN_FRONTEND is set to avoid being asked for input and hang during build:
 # https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
 RUN export DEBIAN_FRONTEND=noninteractive \
  && apt-get update \
  && apt-get install --yes \
+        build-essential \
         systemd \
         curl \
         git \
         sudo \
  && rm -rf /var/lib/apt/lists/*
+ 
+# Install Miniconda
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV PATH /opt/conda/bin:$PATH
+RUN apt-get install -y wget bzip2 ca-certificates \
+	libglib2.0-0 libxext6 libsm6 libxrender1 \
+	git mercurial subversion
+RUN wget --quiet https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+	/bin/bash ~/miniconda.sh -b -p /opt/conda && \
+	rm ~/miniconda.sh && \
+	ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
+	echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
+	echo "conda activate base" >> ~/.bashrc
+RUN apt-get install -y default-jdk default-jre
+RUN apt-get install -y curl grep sed dpkg && \
+	TINI_VERSION=`curl https://github.com/krallin/tini/releases/latest | grep -o "/v.*\"" | sed 's:^..\(.*\).$:\1:'` && \
+	curl -L "https://github.com/krallin/tini/releases/download/v${TINI_VERSION}/tini_${TINI_VERSION}.deb" > tini.deb && \
+	dpkg -i tini.deb && \
+	rm tini.deb && \
+	apt-get clean 
+ 
+# Install Python Packages
+RUN pip install tensorflow && \
+	pip install cython && \
+	pip install nltk && \
+	pip install pandas && \
+	pip install seaborn && \
+	pip install sklearn && \
+	pip install simplejson && \
+	pip install psycopg2-binary && \
+	conda install av -c conda-forge && \
 
 # Kill all the things we don't need
 RUN find /etc/systemd/system \
